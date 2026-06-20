@@ -1,47 +1,39 @@
-# Lộ trình Học tập Trí tuệ Nhân tạo Thực chiến - Giai đoạn 2: Nền tảng PyTorch
+# Lộ trình Học tập Trí tuệ Nhân tạo Thực chiến - Giai đoạn 2: Nền tảng PyTorch & Tối ưu hóa
 
 ## Objective
 
-Làm chủ nền tảng PyTorch và cơ chế hoạt động nội tại của quá trình huấn luyện mạng thần kinh nhân tạo. Chuyển tiếp từ tư duy mô hình "hộp đen" (black box) sang tư duy thiết kế phần mềm (OOP) để kiểm soát, tối ưu hóa và tự xây dựng toàn bộ vòng đời huấn luyện mô hình Deep Learning.
+Làm chủ nền tảng PyTorch, cơ chế hoạt động nội tại của quá trình huấn luyện mạng thần kinh nhân tạo và tối ưu hóa hệ thống. Chuyển tiếp từ tư duy mô hình "hộp đen" sang tư duy thiết kế phần mềm (OOP) để tự kiểm soát vòng đời huấn luyện mô hình Deep Learning.
 
 ## Current State
 
-Đã phân tích và nắm vững bản chất 4 mảnh ghép cốt lõi của PyTorch (Dataset/DataLoader, Hardware Management, Model Architecture, Training Loop). Đã làm rõ sự khác biệt giữa cấu trúc code học thuật cơ bản và thiết lập thực chiến. Đã chốt phương án sử dụng phần cứng tối ưu cho việc thực hành trên máy tính cá nhân (Intel Core Ultra 7).
+Đã hoàn thành phân tích lý thuyết cốt lõi và chạy thử nghiệm thành công pipeline huấn luyện PyTorch đầu tiên trên máy tính cá nhân. Đã hiểu bản chất của đồ thị tính toán, vòng lặp 5 bước, và tự tay thực hiện tinh chỉnh siêu tham số (Hyperparameter Tuning) để đưa mô hình từ trạng thái Underfitting tới mức hội tụ hoàn hảo.
 
 ## Confirmed Knowledge
 
-**1. Cơ chế Autograd & Computation Graph**
+* **Vòng lặp Huấn luyện Chuẩn (5 Bước):**
+1. Forward Pass: `y_pred = model(x)`
+2. Tính Loss: `loss = criterion(y_pred, y_true)`
+3. Xóa Gradient: `optimizer.zero_grad()`
+4. Lan truyền ngược (Autograd): `loss.backward()`
+5. Cập nhật Trọng số: `optimizer.step()`
 
-* PyTorch theo dõi các phép toán trên Tensor (`requires_grad=True`) để xây dựng Đồ thị tính toán có hướng (DAG).
-* Quá trình lan truyền ngược (Backward pass) tính toán vector gradient thông qua quy tắc chuỗi (kế thừa từ tính toán ma trận Jacobian), cho phép tự động điều chỉnh tham số mô hình để giảm sai số.
 
-**2. Vòng lặp Huấn luyện Chuẩn (5 Bước)**
+* **Tinh chỉnh Siêu tham số (Khắc phục Underfitting):** Khi Loss đang giảm nhưng mô hình chưa đạt kết quả tối ưu, cần cung cấp thêm thời gian hoặc tăng tốc độ hội tụ bằng cách tăng số chu kỳ (`Epochs`) hoặc tăng Tốc độ học (`Learning Rate - lr`). Đã kiểm chứng thành công với `Epochs=100` và `lr=0.1`.
+* **Bản chất Kiến trúc nn.Linear (Dense Layer):** Tạo kết nối đầy đủ (Fully Connected). Đại diện cho phương trình $y = xW^T + b$. Mô hình tự tìm ra quy luật bằng cách vặn chỉnh các tham số $W$ và $b$ lọc qua nhiễu (noise). Tổng tham số = `(in_features * out_features) + out_features`.
+* **Quản lý Bộ nhớ & Tối ưu hóa:**
+* Dùng `loss.item()` khi tích lũy loss để cắt đứt đồ thị tính toán, ngăn chặn rò rỉ RAM/VRAM.
+* Khi đánh giá/suy luận (Inference), luôn bọc trong context manager `with torch.no_grad():` để vô hiệu hóa Autograd.
 
-1. **Forward Pass:** `y_pred = model(x)` (Đưa dữ liệu qua mô hình lấy dự đoán).
-2. **Tính Loss:** `loss = criterion(y_pred, y_true)` (Đo lường sai số).
-3. **Xóa Gradient:** `optimizer.zero_grad()` (Bắt buộc để tránh lỗi cộng dồn gradient từ batch trước).
-4. **Lan truyền ngược:** `loss.backward()` (Tính toán đạo hàm).
-5. **Cập nhật Trọng số:** `optimizer.step()` (Điều chỉnh mô hình theo gradient).
 
-**3. Quản lý Bộ nhớ & Tối ưu hóa (Hardware Context)**
+* **Chiến lược Phần cứng (Intel Core Ultra 7):** Trong Giai đoạn 2, sử dụng **CPU** (`.to('cpu')`) để huấn luyện nhằm đảm bảo tính ổn định và tránh lỗi môi trường thư viện. NPU chỉ được thiết kế cho quá trình Inference sinh thái thấp, sẽ áp dụng ở Giai đoạn 4 (MLOps).
+* **Thiết kế Luồng Dữ liệu (OOP):**
+* **Dataset:** Kế thừa `torch.utils.data.Dataset`, ghi đè `__init__`, `__len__`, và `__getitem__`.
+* **DataLoader:** Bọc Dataset để xử lý Batching, Shuffle và Multiprocessing.
 
-* **Đồng bộ:** Data và Model bắt buộc phải nằm trên cùng một thiết bị thông qua câu lệnh `.to(device)`.
-* **Chống rò rỉ bộ nhớ:** Khi log giá trị loss theo epoch, luôn dùng `loss.item()` để trích xuất giá trị thuần túy, cắt đứt sự lưu trữ đồ thị tính toán gây tràn RAM/VRAM.
-* **Inference/Đánh giá:** Luôn sử dụng context manager `with torch.no_grad():` và chuyển trạng thái `model.eval()` để vô hiệu hóa autograd, tiết kiệm bộ nhớ và tăng tốc.
-* **Chiến lược Phần cứng cá nhân (Intel Core Ultra 7):** Trong Giai đoạn 2 (tập trung xây dựng kiến trúc từ đầu), ưu tiên huấn luyện bằng **CPU** (`.to('cpu')`) để đảm bảo tính ổn định và tránh lỗi môi trường. NPU chỉ thiết kế cho Inference (sẽ dùng với OpenVINO ở Giai đoạn 4 MLOps). iGPU (IPEX) thiết lập phức tạp, tạm thời bỏ qua.
 
-**4. Thiết kế Luồng Dữ liệu (Dataset & DataLoader)**
 
-* **Dataset (OOP):** Kế thừa `torch.utils.data.Dataset`. Bắt buộc ghi đè 3 hàm: `__init__` (khởi tạo dữ liệu), `__len__` (tổng số lượng mẫu), và `__getitem__` (logic lấy 1 mẫu dữ liệu đơn lẻ).
-* **DataLoader:** Bọc lớp Dataset để quản lý batching (gộp batch), shuffle (xáo trộn), và multiprocessing (nạp song song), giúp đẩy dữ liệu liên tục không làm nghẽn mô hình.
+### Open Questions
 
-**5. Bản chất Kiến trúc nn.Linear (Dense Layer)**
-
-* Tạo kết nối đầy đủ (Fully Connected) giữa mọi node đầu vào với mọi node đầu ra.
-* Phương trình toán học: $y = xW^T + b$ (Tìm kiếm quy luật thông qua việc vặn chỉnh $W$ và $b$).
-* **Tổng tham số cần học:** Bằng `(in_features * out_features) + out_features`. Bao gồm Ma trận trọng số ($W$) kích thước `in x out` và Vector độ lệch ($b$) kích thước `out`.
-
-**6. Cấu trúc PyTorch Thực chiến**
-
-* Mô hình không phải là lệnh đơn lẻ mà phải là một Class kế thừa `nn.Module`, thiết lập các thành phần ở `__init__` và định nghĩa dòng chảy tensor ở hàm `forward()`.
-* Vòng lặp huấn luyện thực chiến cần chia các khối độc lập: Train loop, Validation/Evaluation loop, và cơ chế lưu trữ mô hình tốt nhất (Checkpoint: `torch.save(model.state_dict())`).
+* Cách triển khai thuật toán Gradient Descent và ma trận Jacobian bằng thuần NumPy để bóc tách lớp toán học ngầm của PyTorch.
+* Thiết kế kiến trúc `Custom Dataset` thực chiến kết hợp kỹ thuật trượt cửa sổ thời gian (sliding window) cho dữ liệu chuỗi (Sequential Data/Time-Series).
+* Cách áp dụng hàm `pack_padded_sequence` để xử lý các batch dữ liệu chuỗi có độ dài không đồng đều.

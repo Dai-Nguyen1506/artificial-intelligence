@@ -38,3 +38,7 @@ Yêu cầu cuối cùng:
 * Không xuất bất kỳ nội dung nào khác.
 * Knowledge Object phải phản ánh trạng thái hiểu biết mới nhất sau phiên làm việc hiện tại.
 * Nội dung không quá dài nhưng không làm mất các tri thức quan trọng cần thiết cho việc kế thừa ngữ cảnh ở các phiên sau.
+
+### Open Questions
+
+Liệt kê đầy đủ những thứ chưa được làm rõ hoặc có thể mở rộng
